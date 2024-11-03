@@ -39,29 +39,26 @@ data_dir = 'data'
 gradient_accumulation_steps = 5 * 8 # used to simulate larger batch sizes
 batch_size = 12 # if gradient_accumulation_steps > 1 this is micro batch size
 
-# Model
-encoder_args = dict(
-    block_size = 4*max_relator_length,
-    vocab_size = 8, # {-2, -1, 0, 1, 2} + 2 ==> pad=2, 5 rounded up to 8
-    n_layer = 2,
-    n_head = 4,
-    n_embd = 128,
-    n_segments = 4,
-    dropout = 0.0,
-    bias = True, # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
-    causal = False
-)
+# Encoder
+encoder_block_size = 4*max_relator_length,
+encoder_vocab_size = 8, # {-2, -1, 0, 1, 2} + 2 ==> pad=2, 5 rounded up to 8
+encoder_n_layer = 2,
+encoder_n_head = 4,
+encoder_n_embd = 128,
+encoder_n_segments = 4,
+encoder_dropout = 0.0,
+encoder_bias = True, # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
+encoder_causal = False
 
-decoder_args = dict(
-    block_size = max_path_length + 2,
-    vocab_size = 16, # {0:pad, 1-12:actions, 13:start, 14:end}, 15 rounded up to 16
-    n_layer = 2,
-    n_head = 4,
-    n_embd = 128,
-    dropout = 0.0,
-    bias = True, # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
-    causal = True
-)
+# Decoder
+decoder_block_size = max_path_length + 2,
+decoder_vocab_size = 16, # {0:pad, 1-12:actions, 13:start, 14:end}, 15 rounded up to 16
+decoder_n_layer = 2,
+decoder_n_head = 4,
+decoder_n_embd = 128,
+decoder_dropout = 0.0,
+decoder_bias = True, # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
+decoder_causal = True
 
 # Optimizer (AdamW)
 learning_rate = 6e-4
@@ -109,7 +106,7 @@ else:
     master_process = True
     ddp_world_size = 1
     ddp_rank = 0
-next_token_predictions_per_iter = gradient_accumulation_steps * ddp_world_size * batch_size * decoder_args['block_size']
+next_token_predictions_per_iter = gradient_accumulation_steps * ddp_world_size * batch_size * decoder_block_size
 print(f"(padded) tokens per iteration will be: {next_token_predictions_per_iter:,}")
 
 # -----------------------------------------------------------------------------
@@ -178,6 +175,29 @@ data_loader = DataLoader()
 # -----------------------------------------------------------------------------
 # Model
 # -----------------------------------------------------------------------------
+encoder_args = dict(
+    block_size = encoder_block_size,
+    vocab_size = encoder_vocab_size,
+    n_layer = encoder_n_layer,
+    n_head = encoder_n_head,
+    n_embd = encoder_n_embd,
+    n_segments = encoder_n_segments,
+    dropout = encoder_dropout,
+    bias = encoder_bias,
+    causal = encoder_causal
+)
+
+decoder_args = dict(
+    block_size = decoder_block_size,
+    vocab_size = decoder_vocab_size,
+    n_layer = decoder_n_layer,
+    n_head = decoder_n_head,
+    n_embd = decoder_n_embd,
+    dropout = decoder_dropout,
+    bias = decoder_bias,
+    causal = decoder_causal
+)
+
 if init_from == 'scratch':
     print("Initializing a new model from scratch")
     encoder_config = EncoderConfig(**encoder_args)
