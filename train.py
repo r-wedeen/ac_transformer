@@ -51,7 +51,7 @@ encoder_bias = True, # True: bias in Linears and LayerNorms, like GPT-2. False: 
 encoder_causal = False
 
 # Decoder
-decoder_block_size = max_path_length + 2,
+decoder_block_size = 2*max_path_length, # allow sequences up to twice the max path length observed in the data
 decoder_vocab_size = 16, # {0:pad, 1-12:actions, 13:start, 14:end}, 15 rounded up to 16
 decoder_n_layer = 2,
 decoder_n_head = 4,
@@ -69,7 +69,7 @@ grad_clip = 1.0
 
 # Learning rate
 decay_lr = True
-warmup_iters = 2000
+warmup_iters = 200
 lr_decay_iters = total_training_iters
 min_lr = 6e-5
 
@@ -87,6 +87,7 @@ config = {k: globals()[k] for k in config_keys} # will be useful for logging
 # -----------------------------------------------------------------------------
 # DDP
 # -----------------------------------------------------------------------------
+
 backend = 'nccl'
 ddp = int(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
 if ddp:
@@ -175,6 +176,7 @@ data_loader = DataLoader()
 # -----------------------------------------------------------------------------
 # Model
 # -----------------------------------------------------------------------------
+
 encoder_args = dict(
     block_size = encoder_block_size,
     vocab_size = encoder_vocab_size,

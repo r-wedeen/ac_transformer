@@ -198,7 +198,7 @@ class Encoder(nn.Module):
     def forward(self, idx_encoder):
         device = idx_encoder.device
         b, t = idx_encoder.shape
-        assert t == self.config.block_size, f"Cannot forward sequence of length {t}, block size is {self.config.block_size}"
+        assert t == self.config.block_size, f"Cannot forward sequence of length {t}, must be equal to block size {self.config.block_size}"
         pos = torch.arange(0, t, dtype=torch.long, device=device) # shape (t//4)
         seg0 = torch.zeros(t//4, dtype=torch.long, device=device)
         seg1 = torch.ones(t//4, dtype=torch.long, device=device)
@@ -326,6 +326,7 @@ class GPT(nn.Module):
 
     def __init__(self, config):
         super().__init__()
+        self.config = config
         self.encoder = Encoder(config)
         self.decoder = Decoder(config)
         n_params_encoder = self.encoder.get_num_params()
@@ -369,17 +370,15 @@ class GPT(nn.Module):
         return optimizer
 
     @torch.no_grad()
-    def generate(self, idx_decoder, idx_encoder, max_new_tokens, temperature=1.0, top_k=None):
+    def generate(self, idx_encoder, idx_decoder, max_new_tokens, temperature=1.0, top_k=None):
         """
         Take a conditioning sequence of indices idx (LongTensor of shape (b,t)) and complete
         the sequence max_new_tokens times, feeding the predictions back into the model each time.
         Most likely you'll want to make sure to be in model.eval() mode of operation for this.
         """
         for _ in range(max_new_tokens):
-            # if the sequence context is growing too long we must crop it at block_size
-            idx_cond = idx_decoder if idx_decoder.size(1) <= self.decoder_config.block_size else idx_decoder[:, -self.decoder_config.block_size:]
             # forward the model to get the logits for the index in the sequence
-            logits, _ = self(idx_cond, idx_encoder)
+            logits, _ = self(idx_encoder, idx_decoder)
             # pluck the logits at the final step and scale by desired temperature
             logits = logits[:, -1, :] / temperature
             # optionally crop the logits to only the top k options
